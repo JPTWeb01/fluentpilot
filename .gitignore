@@ -1,0 +1,36 @@
+# --- Environments ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.db
+
+# --- Node ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# --- Mobile / Expo ---
+.expo/
+.expo-shared/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- Logs ---
+*.log
+npm-debug.log*
