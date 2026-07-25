@@ -55,7 +55,8 @@ class GroqSpeechProvider(SpeechProvider):
             raise ProviderAPIError(str(exc)) from exc
 
         self.stt_rate_limit = parse_rate_limit_headers(raw.headers)
-        return raw.parse().text
+        transcription = await raw.parse()
+        return transcription.text
 
     async def synthesize(self, text: str) -> SpeechAudio:
         try:

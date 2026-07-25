@@ -34,7 +34,7 @@ class GroqProvider(AIProvider):
             raise ProviderAPIError(str(exc)) from exc
 
         self.rate_limit = parse_rate_limit_headers(raw.headers)
-        completion = raw.parse()
+        completion = await raw.parse()
 
         choice = completion.choices[0]
         usage = completion.usage
