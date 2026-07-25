@@ -9,8 +9,13 @@ as a modular monolith designed to scale into independent services.
 Phase 1 (Foundation) complete: monorepo scaffold, containerized Postgres/Redis, FastAPI backend,
 JWT authentication.
 
-Phase 2 (AI Foundation) in progress: provider-agnostic AI orchestrator (`services/ai`) with
+Phase 2 (AI Foundation) complete: provider-agnostic AI orchestrator (`services/ai`) with
 Groq → Gemini → Ollama fallback chains, wired into the API.
+
+Phase 3 (Voice System) in progress: turn-based push-to-talk voice conversation — record in the
+browser, transcribe (Groq → Gemini fallback), reply via the text orchestrator, synthesize speech
+(Groq → Gemini fallback), play it back. Stateless v1, no real-time streaming yet — see
+[`docs/adr-0001-voice-v1-scope.md`](docs/adr-0001-voice-v1-scope.md).
 
 ## Stack
 
@@ -83,7 +88,7 @@ to run a real-provider smoke test.
 
 1. **Foundation** — monorepo, Docker, FastAPI, PostgreSQL, JWT auth
 2. **AI Foundation** — provider-agnostic AI orchestrator (Groq / Gemini / Ollama)
-3. **Voice System** — STT/TTS real-time conversation pipeline
+3. **Voice System** — STT/TTS conversation pipeline (v1: turn-based; real-time streaming is a fast-follow)
 4. **English Coach Modules** — grammar, vocabulary, pronunciation, accent, interview, workplace
 5. **Mobile App** — Expo client
 6. **Production Optimization** — caching, rate limiting, cost monitoring, deployment hardening

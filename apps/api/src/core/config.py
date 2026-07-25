@@ -25,9 +25,14 @@ class Settings(BaseSettings):
 
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.0-flash"
+    gemini_tts_model: str = "gemini-2.5-flash-preview-tts"
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1"
+
+    # Speech (STT/TTS) — reuses groq_api_key/gemini_api_key above, just different models.
+    groq_stt_model: str = "whisper-large-v3"
+    groq_tts_model: str = "canopylabs/orpheus-v1-english"
 
     @property
     def cors_origin_list(self) -> list[str]:

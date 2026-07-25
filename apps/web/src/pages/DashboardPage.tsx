@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMe } from "@/features/auth/api";
@@ -16,8 +18,14 @@ export function DashboardPage() {
             {isLoading ? "Loading your profile..." : `Signed in as ${user?.email}`}
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Practice sessions aren't available yet — the voice coach is coming in a later phase.
+        <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
+          Ready to practice speaking English out loud?
+          <Link
+            to="/practice"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+          >
+            Start practicing
+          </Link>
         </CardContent>
       </Card>
     </AppShell>

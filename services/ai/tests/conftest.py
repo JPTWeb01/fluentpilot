@@ -2,6 +2,8 @@ import pytest
 
 from fluentpilot_ai.exceptions import ProviderAPIError
 from fluentpilot_ai.provider_interface import AIProvider
+from fluentpilot_ai.speech.provider_interface import SpeechProvider
+from fluentpilot_ai.speech.types import SpeechAudio
 from fluentpilot_ai.types import AIRequest, AIResponse, TokenUsage
 
 
@@ -30,6 +32,38 @@ class FakeProvider(AIProvider):
             ),
             latency_ms=0.0,
         )
+
+
+class FakeSpeechProvider(SpeechProvider):
+    """Test double: either returns a canned transcript/audio or raises
+    ProviderError, and records every call it received."""
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        fails: bool = False,
+        transcript: str = "hello world",
+        audio_bytes: bytes = b"fake-wav-bytes",
+    ) -> None:
+        self.name = name
+        self._fails = fails
+        self._transcript = transcript
+        self._audio_bytes = audio_bytes
+        self.transcribe_calls: list[tuple[bytes, str]] = []
+        self.synthesize_calls: list[str] = []
+
+    async def transcribe(self, audio_bytes: bytes, mime_type: str) -> str:
+        self.transcribe_calls.append((audio_bytes, mime_type))
+        if self._fails:
+            raise ProviderAPIError(f"{self.name} is down")
+        return self._transcript
+
+    async def synthesize(self, text: str) -> SpeechAudio:
+        self.synthesize_calls.append(text)
+        if self._fails:
+            raise ProviderAPIError(f"{self.name} is down")
+        return SpeechAudio(audio_bytes=self._audio_bytes, mime_type="audio/wav")
 
 
 @pytest.fixture

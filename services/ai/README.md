@@ -23,6 +23,13 @@ configured), `AllProvidersFailedError` is raised with the per-provider errors at
 Providers are only added to the orchestrator if configured (e.g. an API key is set) —
 see `apps/api/src/core/ai.py` for how `apps/api` composes this from `Settings`.
 
+`SpeechOrchestrator` (`speech/router.py`) follows the same shape for speech: `transcribe()`
+and `synthesize()` each try Groq (Whisper STT / PlayAI TTS) then fall back to Gemini
+(multimodal transcription / native TTS), never Ollama (no local STT/TTS). `synthesize()`
+always returns `SpeechAudio` with `mime_type="audio/wav"` regardless of provider — Gemini's
+native audio output is raw PCM, so `GeminiSpeechProvider` wraps it in a WAV header before
+returning, keeping the output format uniform for callers.
+
 ## Layout
 
 ```
@@ -38,6 +45,13 @@ services/ai/
 │   │   ├── groq_provider.py
 │   │   ├── gemini_provider.py
 │   │   └── ollama_provider.py
+│   ├── speech/                  # SpeechOrchestrator + STT/TTS provider adapters
+│   │   ├── types.py              # SpeechAudio
+│   │   ├── provider_interface.py # SpeechToTextProvider, TextToSpeechProvider
+│   │   ├── router.py             # SpeechOrchestrator + STT/TTS fallback chains
+│   │   └── providers/
+│   │       ├── groq_speech_provider.py
+│   │       └── gemini_speech_provider.py
 │   └── prompts/                # packaged system-prompt templates + loader
 │       ├── conversation.txt
 │       ├── grammar.txt

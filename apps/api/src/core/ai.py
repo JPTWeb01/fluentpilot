@@ -1,9 +1,11 @@
 from functools import lru_cache
 
-from fluentpilot_ai import AIOrchestrator, AIProvider
+from fluentpilot_ai import AIOrchestrator, AIProvider, SpeechOrchestrator, SpeechProvider
 from fluentpilot_ai.providers.gemini_provider import GeminiProvider
 from fluentpilot_ai.providers.groq_provider import GroqProvider
 from fluentpilot_ai.providers.ollama_provider import OllamaProvider
+from fluentpilot_ai.speech.providers.gemini_speech_provider import GeminiSpeechProvider
+from fluentpilot_ai.speech.providers.groq_speech_provider import GroqSpeechProvider
 
 from src.core.config import get_settings
 
@@ -33,3 +35,28 @@ def _build_providers() -> dict[str, AIProvider]:
 @lru_cache
 def get_ai_orchestrator() -> AIOrchestrator:
     return AIOrchestrator(_build_providers())
+
+
+def _build_speech_providers() -> dict[str, SpeechProvider]:
+    settings = get_settings()
+    providers: dict[str, SpeechProvider] = {}
+
+    if settings.groq_api_key:
+        providers["groq"] = GroqSpeechProvider(
+            api_key=settings.groq_api_key,
+            stt_model=settings.groq_stt_model,
+            tts_model=settings.groq_tts_model,
+        )
+
+    if settings.gemini_api_key:
+        providers["gemini"] = GeminiSpeechProvider(
+            api_key=settings.gemini_api_key, tts_model=settings.gemini_tts_model
+        )
+
+    # No Ollama entry — it has no STT/TTS capability.
+    return providers
+
+
+@lru_cache
+def get_speech_orchestrator() -> SpeechOrchestrator:
+    return SpeechOrchestrator(_build_speech_providers())

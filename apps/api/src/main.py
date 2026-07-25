@@ -9,6 +9,7 @@ from src.core.config import get_settings
 from src.core.logging import configure_logging
 from src.core.rate_limit import limiter
 from src.modules.auth.router import router as auth_router
+from src.modules.voice.router import router as voice_router
 
 settings = get_settings()
 
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(voice_router, prefix="/api/v1")
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:
