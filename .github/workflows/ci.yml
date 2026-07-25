@@ -57,3 +57,30 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://ci:ci@localhost:5432/ci
           JWT_SECRET_KEY: ci-test-secret-key
         run: pytest
+
+  web:
+    name: apps/web — lint, test & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (eslint)
+        run: npm run lint
+
+      - name: Test (vitest)
+        run: npm run test
+
+      - name: Build
+        run: npm run build
