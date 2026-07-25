@@ -18,6 +18,17 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173"
 
+    # AI providers — all optional. A provider is only wired into the orchestrator
+    # if its API key is set, so local dev works with zero, one, or all of them.
+    groq_api_key: str | None = None
+    groq_model: str = "llama-3.3-70b-versatile"
+
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.0-flash"
+
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.1"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

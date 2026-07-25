@@ -6,8 +6,11 @@ as a modular monolith designed to scale into independent services.
 
 ## Status
 
-Phase 1 (Foundation) in progress: monorepo scaffold, containerized Postgres/Redis, FastAPI backend,
+Phase 1 (Foundation) complete: monorepo scaffold, containerized Postgres/Redis, FastAPI backend,
 JWT authentication.
+
+Phase 2 (AI Foundation) in progress: provider-agnostic AI orchestrator (`services/ai`) with
+Groq → Gemini → Ollama fallback chains, wired into the API.
 
 ## Stack
 
@@ -64,6 +67,17 @@ Run tests (no external services required — uses an in-memory SQLite DB):
 cd apps/api
 pytest
 ```
+
+## Local development — AI orchestrator
+
+```bash
+cd services/ai
+pip install -e ".[dev]"
+pytest   # fake providers only, no API key required
+```
+
+See [`services/ai/README.md`](services/ai/README.md) for the orchestrator architecture and how
+to run a real-provider smoke test.
 
 ## Roadmap
 
