@@ -1,6 +1,7 @@
 import groq
 
 from fluentpilot_ai.exceptions import ProviderAPIError, ProviderRateLimitError, ProviderTimeoutError
+from fluentpilot_ai.rate_limit import parse_rate_limit_headers
 from fluentpilot_ai.speech.provider_interface import SpeechProvider
 from fluentpilot_ai.speech.types import SpeechAudio
 
@@ -42,7 +43,7 @@ class GroqSpeechProvider(SpeechProvider):
     async def transcribe(self, audio_bytes: bytes, mime_type: str) -> str:
         ext = _EXTENSION_BY_MIME.get(mime_type, "webm")
         try:
-            transcription = await self._client.audio.transcriptions.create(
+            raw = await self._client.audio.transcriptions.with_raw_response.create(
                 model=self._stt_model,
                 file=(f"audio.{ext}", audio_bytes, mime_type),
             )
@@ -53,7 +54,8 @@ class GroqSpeechProvider(SpeechProvider):
         except groq.APIError as exc:
             raise ProviderAPIError(str(exc)) from exc
 
-        return transcription.text
+        self.stt_rate_limit = parse_rate_limit_headers(raw.headers)
+        return raw.parse().text
 
     async def synthesize(self, text: str) -> SpeechAudio:
         try:
@@ -71,4 +73,5 @@ class GroqSpeechProvider(SpeechProvider):
         except groq.APIError as exc:
             raise ProviderAPIError(str(exc)) from exc
 
+        self.tts_rate_limit = parse_rate_limit_headers(response.headers)
         return SpeechAudio(audio_bytes=audio_bytes, mime_type="audio/wav")

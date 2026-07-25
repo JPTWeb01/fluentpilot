@@ -22,3 +22,22 @@ class VoiceTurnResponse(BaseModel):
     transcript: str
     reply_text: str
     reply_audio_base64: str
+
+
+class RateLimitInfo(BaseModel):
+    limit_requests: int | None = None
+    remaining_requests: int | None = None
+    reset_requests: str | None = None
+    limit_tokens: int | None = None
+    remaining_tokens: int | None = None
+    reset_tokens: str | None = None
+
+
+class ProviderUsage(BaseModel):
+    chat: RateLimitInfo | None = None
+    stt: RateLimitInfo | None = None
+    tts: RateLimitInfo | None = None
+
+
+class UsageResponse(BaseModel):
+    providers: dict[str, ProviderUsage]

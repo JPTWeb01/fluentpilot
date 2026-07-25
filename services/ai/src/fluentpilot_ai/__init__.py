@@ -6,6 +6,7 @@ from fluentpilot_ai.exceptions import (
     ProviderTimeoutError,
 )
 from fluentpilot_ai.provider_interface import AIProvider
+from fluentpilot_ai.rate_limit import RateLimitSnapshot
 from fluentpilot_ai.router import AIOrchestrator
 from fluentpilot_ai.speech.provider_interface import (
     SpeechProvider,
@@ -28,6 +29,7 @@ __all__ = [
     "ProviderAPIError",
     "ProviderRateLimitError",
     "ProviderTimeoutError",
+    "RateLimitSnapshot",
     "SpeechOrchestrator",
     "SpeechAudio",
     "SpeechProvider",

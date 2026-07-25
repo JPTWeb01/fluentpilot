@@ -6,8 +6,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { blobToBase64, base64ToBlob } from "@/features/voice/audio";
-import { useVoiceTurn } from "@/features/voice/api";
-import type { VoiceMessage } from "@/features/voice/types";
+import { useVoiceTurn, useVoiceUsage } from "@/features/voice/api";
+import type { ProviderUsage, VoiceMessage } from "@/features/voice/types";
 
 type RecorderState = "idle" | "recording" | "processing";
 
@@ -22,6 +22,13 @@ function pickSupportedMimeType(): string | null {
   return CANDIDATE_MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) ?? null;
 }
 
+function formatRemaining(info: ProviderUsage[keyof ProviderUsage]): string {
+  if (!info || info.remaining_requests == null) return "—";
+  return info.limit_requests != null
+    ? `${info.remaining_requests}/${info.limit_requests}`
+    : `${info.remaining_requests}`;
+}
+
 export function PracticePage() {
   const [state, setState] = useState<RecorderState>("idle");
   const [history, setHistory] = useState<VoiceMessage[]>([]);
@@ -30,6 +37,7 @@ export function PracticePage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const voiceTurn = useVoiceTurn();
+  const usage = useVoiceUsage();
 
   const startRecording = async () => {
     if (!window.isSecureContext) {
@@ -101,6 +109,7 @@ export function PracticePage() {
         return url;
       });
       void new Audio(url).play();
+      void usage.refetch();
     } catch {
       toast.error("Something went wrong processing your turn. Please try again.");
     } finally {
@@ -151,6 +160,21 @@ export function PracticePage() {
               </div>
             ))}
           </div>
+
+          {usage.data && Object.keys(usage.data.providers).length > 0 && (
+            <div className="w-full space-y-1 border-t pt-4 text-xs text-muted-foreground">
+              <p className="font-medium">API quota remaining (this server session)</p>
+              {Object.entries(usage.data.providers).map(([name, providerUsage]) => (
+                <div key={name} className="flex justify-between gap-4">
+                  <span className="capitalize">{name}</span>
+                  <span>
+                    chat {formatRemaining(providerUsage.chat)} · stt{" "}
+                    {formatRemaining(providerUsage.stt)} · tts {formatRemaining(providerUsage.tts)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </AppShell>

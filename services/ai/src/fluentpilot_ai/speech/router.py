@@ -1,6 +1,7 @@
 import logging
 
 from fluentpilot_ai.exceptions import AllProvidersFailedError, ProviderError
+from fluentpilot_ai.rate_limit import RateLimitSnapshot
 from fluentpilot_ai.speech.provider_interface import SpeechProvider
 from fluentpilot_ai.speech.types import SpeechAudio
 
@@ -69,3 +70,13 @@ class SpeechOrchestrator:
                 continue
 
         raise AllProvidersFailedError("synthesize", errors)
+
+    def get_rate_limits(self) -> dict[str, dict[str, RateLimitSnapshot | None]]:
+        """Each configured provider's STT/TTS rate-limit state as of its most
+        recent call. None for an operation that hasn't been called yet, or that
+        the provider doesn't report rate-limit headers for.
+        """
+        return {
+            name: {"stt": provider.stt_rate_limit, "tts": provider.tts_rate_limit}
+            for name, provider in self._providers.items()
+        }

@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from fluentpilot_ai.exceptions import AllProvidersFailedError, ProviderError
 from fluentpilot_ai.provider_interface import AIProvider
+from fluentpilot_ai.rate_limit import RateLimitSnapshot
 from fluentpilot_ai.types import AIRequest, AIResponse
 from fluentpilot_ai.usage import LoggingUsageRecorder, UsageRecorder
 
@@ -74,3 +75,11 @@ class AIOrchestrator:
             return response
 
         raise AllProvidersFailedError(request.task, errors)
+
+    def get_rate_limits(self) -> dict[str, RateLimitSnapshot | None]:
+        """Each configured provider's rate-limit state as of its most recent call.
+
+        None for a provider that hasn't been called yet, or that doesn't report
+        rate-limit headers at all.
+        """
+        return {name: provider.rate_limit for name, provider in self._providers.items()}

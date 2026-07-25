@@ -2,6 +2,7 @@ import groq
 
 from fluentpilot_ai.exceptions import ProviderAPIError, ProviderRateLimitError, ProviderTimeoutError
 from fluentpilot_ai.provider_interface import AIProvider
+from fluentpilot_ai.rate_limit import parse_rate_limit_headers
 from fluentpilot_ai.types import AIRequest, AIResponse, TokenUsage
 
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
@@ -19,7 +20,7 @@ class GroqProvider(AIProvider):
 
     async def complete(self, request: AIRequest) -> AIResponse:
         try:
-            completion = await self._client.chat.completions.create(
+            raw = await self._client.chat.completions.with_raw_response.create(
                 model=self._model,
                 messages=[{"role": m.role, "content": m.content} for m in request.messages],
                 temperature=request.temperature,
@@ -31,6 +32,9 @@ class GroqProvider(AIProvider):
             raise ProviderTimeoutError(str(exc)) from exc
         except groq.APIError as exc:
             raise ProviderAPIError(str(exc)) from exc
+
+        self.rate_limit = parse_rate_limit_headers(raw.headers)
+        completion = raw.parse()
 
         choice = completion.choices[0]
         usage = completion.usage

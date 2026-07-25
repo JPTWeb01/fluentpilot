@@ -1,6 +1,6 @@
 import base64
 
-from fluentpilot_ai import AIRequest, AIResponse, SpeechAudio, TokenUsage
+from fluentpilot_ai import AIRequest, AIResponse, RateLimitSnapshot, SpeechAudio, TokenUsage
 from fluentpilot_ai.exceptions import AllProvidersFailedError
 
 from src.core.ai import get_ai_orchestrator, get_speech_orchestrator
@@ -29,6 +29,9 @@ class FakeAIOrchestrator:
             latency_ms=0.0,
         )
 
+    def get_rate_limits(self) -> dict[str, RateLimitSnapshot | None]:
+        return {"groq": RateLimitSnapshot(1000, 999, "1m", None, None, None)}
+
 
 class FakeSpeechOrchestrator:
     def __init__(self, *, transcript: str = "hello there", fails: bool = False) -> None:
@@ -48,6 +51,9 @@ class FakeSpeechOrchestrator:
         if self._fails:
             raise AllProvidersFailedError("synthesize", {"groq": Exception("down")})
         return SpeechAudio(audio_bytes=b"fake-wav-bytes", mime_type="audio/wav")
+
+    def get_rate_limits(self) -> dict[str, dict[str, RateLimitSnapshot | None]]:
+        return {"groq": {"stt": RateLimitSnapshot(2000, 1998, "1m", None, None, None), "tts": None}}
 
 
 async def _authed_headers(client) -> dict[str, str]:
@@ -129,3 +135,32 @@ async def test_voice_turn_returns_503_when_all_speech_providers_fail(client):
     del app.dependency_overrides[get_speech_orchestrator]
 
     assert resp.status_code == 503
+
+
+async def test_get_usage_returns_rate_limit_snapshot(client):
+    headers = await _authed_headers(client)
+    app.dependency_overrides[get_ai_orchestrator] = lambda: FakeAIOrchestrator()
+    app.dependency_overrides[get_speech_orchestrator] = lambda: FakeSpeechOrchestrator()
+
+    resp = await client.get("/api/v1/voice/usage", headers=headers)
+
+    del app.dependency_overrides[get_ai_orchestrator]
+    del app.dependency_overrides[get_speech_orchestrator]
+
+    assert resp.status_code == 200
+    groq = resp.json()["providers"]["groq"]
+    assert groq["chat"] == {
+        "limit_requests": 1000,
+        "remaining_requests": 999,
+        "reset_requests": "1m",
+        "limit_tokens": None,
+        "remaining_tokens": None,
+        "reset_tokens": None,
+    }
+    assert groq["stt"]["remaining_requests"] == 1998
+    assert groq["tts"] is None
+
+
+async def test_get_usage_requires_auth(client):
+    resp = await client.get("/api/v1/voice/usage")
+    assert resp.status_code in (401, 403)
