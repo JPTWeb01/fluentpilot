@@ -10,6 +10,7 @@ from src.core.logging import configure_logging
 from src.core.rate_limit import limiter
 from src.modules.auth.router import router as auth_router
 from src.modules.grammar.router import router as grammar_router
+from src.modules.pronunciation.router import router as pronunciation_router
 from src.modules.vocabulary.router import router as vocabulary_router
 from src.modules.voice.router import router as voice_router
 
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(voice_router, prefix="/api/v1")
     app.include_router(grammar_router, prefix="/api/v1")
     app.include_router(vocabulary_router, prefix="/api/v1")
+    app.include_router(pronunciation_router, prefix="/api/v1")
 
     @app.get("/health", tags=["health"])
     async def health() -> dict[str, str]:

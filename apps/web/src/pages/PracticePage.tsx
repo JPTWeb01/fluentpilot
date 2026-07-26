@@ -12,6 +12,8 @@ import { useGrammarCheck } from "@/features/grammar/api";
 import type { GrammarCorrection } from "@/features/grammar/types";
 import { useVocabularyCheck } from "@/features/vocabulary/api";
 import type { VocabularySuggestion } from "@/features/vocabulary/types";
+import { usePronunciationCheck } from "@/features/pronunciation/api";
+import type { PronunciationTip } from "@/features/pronunciation/types";
 
 type RecorderState = "idle" | "recording" | "processing";
 
@@ -41,6 +43,9 @@ export function PracticePage() {
   const [vocabSuggestions, setVocabSuggestions] = useState<Record<number, VocabularySuggestion[]>>(
     {}
   );
+  const [pronunciationTips, setPronunciationTips] = useState<Record<number, PronunciationTip[]>>(
+    {}
+  );
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -48,6 +53,7 @@ export function PracticePage() {
   const usage = useVoiceUsage();
   const grammarCheck = useGrammarCheck();
   const vocabularyCheck = useVocabularyCheck();
+  const pronunciationCheck = usePronunciationCheck();
 
   const startRecording = async () => {
     if (!window.isSecureContext) {
@@ -131,6 +137,15 @@ export function PracticePage() {
         })
         .catch(() => {});
 
+      pronunciationCheck
+        .mutateAsync({ text: response.transcript })
+        .then((result) => {
+          if (result.tips.length) {
+            setPronunciationTips((prev) => ({ ...prev, [userMessageIndex]: result.tips }));
+          }
+        })
+        .catch(() => {});
+
       const replyBlob = base64ToBlob(response.reply_audio_base64, "audio/wav");
       const url = URL.createObjectURL(replyBlob);
       setReplyAudioUrl((previous) => {
@@ -203,6 +218,15 @@ export function PracticePage() {
                       <p key={suggestionIndex}>
                         "{suggestion.original}" → "{suggestion.suggestion}" —{" "}
                         {suggestion.explanation}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {pronunciationTips[index] && (
+                  <div className="mt-1 space-y-1 text-xs text-violet-600 dark:text-violet-400">
+                    {pronunciationTips[index].map((tip, tipIndex) => (
+                      <p key={tipIndex}>
+                        "{tip.word}" — {tip.tip}
                       </p>
                     ))}
                   </div>
