@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { blobToBase64, base64ToBlob } from "@/features/voice/audio";
 import { useVoiceTurn, useVoiceUsage } from "@/features/voice/api";
 import type { ProviderUsage, VoiceMessage } from "@/features/voice/types";
+import { useGrammarCheck } from "@/features/grammar/api";
+import type { GrammarCorrection } from "@/features/grammar/types";
 
 type RecorderState = "idle" | "recording" | "processing";
 
@@ -33,11 +35,13 @@ export function PracticePage() {
   const [state, setState] = useState<RecorderState>("idle");
   const [history, setHistory] = useState<VoiceMessage[]>([]);
   const [replyAudioUrl, setReplyAudioUrl] = useState<string | null>(null);
+  const [corrections, setCorrections] = useState<Record<number, GrammarCorrection[]>>({});
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const voiceTurn = useVoiceTurn();
   const usage = useVoiceUsage();
+  const grammarCheck = useGrammarCheck();
 
   const startRecording = async () => {
     if (!window.isSecureContext) {
@@ -96,11 +100,21 @@ export function PracticePage() {
         history,
       });
 
+      const userMessageIndex = history.length;
       setHistory((prev) => [
         ...prev,
         { role: "user", content: response.transcript },
         { role: "assistant", content: response.reply_text },
       ]);
+
+      grammarCheck
+        .mutateAsync({ text: response.transcript })
+        .then((result) => {
+          if (result.corrections.length) {
+            setCorrections((prev) => ({ ...prev, [userMessageIndex]: result.corrections }));
+          }
+        })
+        .catch(() => {});
 
       const replyBlob = base64ToBlob(response.reply_audio_base64, "audio/wav");
       const url = URL.createObjectURL(replyBlob);
@@ -148,15 +162,26 @@ export function PracticePage() {
 
           <div className="w-full space-y-3">
             {history.map((message, index) => (
-              <div
-                key={index}
-                className={
-                  message.role === "user"
-                    ? "ml-auto max-w-[80%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
-                    : "mr-auto max-w-[80%] rounded-lg bg-muted px-3 py-2 text-sm"
-                }
-              >
-                {message.content}
+              <div key={index} className={message.role === "user" ? "ml-auto max-w-[80%]" : "mr-auto max-w-[80%]"}>
+                <div
+                  className={
+                    message.role === "user"
+                      ? "rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
+                      : "rounded-lg bg-muted px-3 py-2 text-sm"
+                  }
+                >
+                  {message.content}
+                </div>
+                {corrections[index] && (
+                  <div className="mt-1 space-y-1 text-xs text-amber-600 dark:text-amber-400">
+                    {corrections[index].map((correction, correctionIndex) => (
+                      <p key={correctionIndex}>
+                        <del>{correction.original}</del> → {correction.corrected} —{" "}
+                        {correction.explanation}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

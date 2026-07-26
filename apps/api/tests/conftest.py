@@ -5,6 +5,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from src.core.rate_limit import limiter
 from src.db.base import Base
 from src.deps import get_db
 from src.main import app
@@ -36,6 +37,11 @@ async def db_session() -> AsyncGenerator[async_sessionmaker[AsyncSession], None]
 
 @pytest_asyncio.fixture
 async def client(db_session) -> AsyncGenerator[AsyncClient, None]:
+    # The limiter's in-memory storage is a module-level singleton shared across
+    # the whole pytest process; without resetting it here, tests that hit
+    # rate-limited endpoints (e.g. /auth/register) would accumulate counts
+    # across unrelated test files and start failing with 429s.
+    limiter.reset()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
