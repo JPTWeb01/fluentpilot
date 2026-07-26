@@ -6,12 +6,19 @@ from google import genai
 from google.genai import errors, types
 
 from fluentpilot_ai.exceptions import ProviderAPIError, ProviderRateLimitError, ProviderTimeoutError
+from fluentpilot_ai.rate_limit import DailyRequestCounter
 from fluentpilot_ai.speech.provider_interface import SpeechProvider
 from fluentpilot_ai.speech.types import SpeechAudio
 
 DEFAULT_STT_MODEL = "gemini-2.0-flash"
 DEFAULT_TTS_MODEL = "gemini-2.5-flash-preview-tts"
 DEFAULT_VOICE = "Kore"
+
+# Empirically confirmed (not published in Gemini's rate-limit docs, which just
+# point at the AI Studio dashboard): the free tier caps gemini-2.5-flash-preview-tts
+# at exactly 10 requests/day/project. Gemini's chat/STT models have no similarly
+# confirmed number, so only TTS gets a self-tracked counter — see DailyRequestCounter.
+_TTS_DAILY_LIMIT = 10
 
 _TRANSCRIBE_INSTRUCTION = (
     "Transcribe this audio verbatim. Reply with only the transcript, no commentary."
@@ -55,6 +62,7 @@ class GeminiSpeechProvider(SpeechProvider):
         self._stt_model = stt_model
         self._tts_model = tts_model
         self._voice = voice
+        self._tts_counter = DailyRequestCounter(_TTS_DAILY_LIMIT)
 
     async def transcribe(self, audio_bytes: bytes, mime_type: str) -> str:
         contents = [
@@ -113,6 +121,8 @@ class GeminiSpeechProvider(SpeechProvider):
             raise ProviderAPIError("Gemini TTS response contained no audio") from exc
         if inline_data is None or inline_data.data is None:
             raise ProviderAPIError("Gemini TTS response contained no audio")
+
+        self.tts_rate_limit = self._tts_counter.record()
 
         wav_bytes = _pcm_to_wav(inline_data.data, inline_data.mime_type or "")
         return SpeechAudio(audio_bytes=wav_bytes, mime_type="audio/wav")

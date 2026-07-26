@@ -1,4 +1,4 @@
-from fluentpilot_ai.rate_limit import parse_rate_limit_headers
+from fluentpilot_ai.rate_limit import DailyRequestCounter, parse_rate_limit_headers
 from fluentpilot_ai.router import AIOrchestrator
 from fluentpilot_ai.speech.router import SpeechOrchestrator
 from tests.conftest import FakeProvider, FakeSpeechProvider
@@ -59,6 +59,26 @@ async def test_ai_orchestrator_reports_rate_limits(make_request):
     limits = orchestrator.get_rate_limits()
     assert limits["groq"].remaining_requests == 999
     assert limits["gemini"] is None
+
+
+def test_daily_request_counter_decrements_remaining_per_call():
+    counter = DailyRequestCounter(limit_requests=10)
+
+    first = counter.record()
+    second = counter.record()
+
+    assert first.limit_requests == 10
+    assert first.remaining_requests == 9
+    assert second.remaining_requests == 8
+
+
+def test_daily_request_counter_floors_at_zero_past_the_limit():
+    counter = DailyRequestCounter(limit_requests=1)
+
+    counter.record()
+    second = counter.record()
+
+    assert second.remaining_requests == 0
 
 
 async def test_speech_orchestrator_reports_rate_limits():

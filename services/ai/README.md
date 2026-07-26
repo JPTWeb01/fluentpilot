@@ -32,6 +32,20 @@ API key or quota — see "Piper setup" below). `synthesize()` always returns
 audio output is raw PCM and Piper's is raw int16 PCM chunks, so both adapters wrap
 their output in a WAV header before returning, keeping the format uniform for callers.
 
+### Rate-limit reporting
+
+Groq's REST responses carry `x-ratelimit-*` headers, parsed by
+`parse_rate_limit_headers()` into a `RateLimitSnapshot` after every call — this is a
+real read of the provider's own quota state. Gemini's API reports none of this, on
+success or on a 429 (confirmed by inspecting a live 429 response's headers — nothing
+resembling a rate-limit field is present). For Gemini TTS specifically, `rate_limit.py`
+also has `DailyRequestCounter`: a self-tracked, in-process count against Gemini's
+empirically-observed (not documented) 10-requests/day free-tier cap on
+`gemini-2.5-flash-preview-tts`, reset at UTC midnight. It's an approximation — it
+undercounts after a process restart and can drift from Google's actual reset time,
+which isn't published. Gemini chat/STT have no similarly-confirmed limit, so they're
+left unreported (`None`) rather than guessing a number.
+
 ### Piper setup
 
 Piper is TTS-only and runs fully in-process (no daemon, no network) — but its ONNX

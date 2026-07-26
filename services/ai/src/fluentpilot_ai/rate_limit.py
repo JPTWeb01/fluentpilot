@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 
 @dataclass(frozen=True)
@@ -38,3 +39,36 @@ def parse_rate_limit_headers(headers: Mapping[str, str]) -> RateLimitSnapshot | 
         remaining_tokens=_int("x-ratelimit-remaining-tokens"),
         reset_tokens=headers.get("x-ratelimit-reset-tokens"),
     )
+
+
+class DailyRequestCounter:
+    """Self-tracked request count for providers that report no rate-limit
+    headers at all (e.g. Gemini's generateContent endpoint returns none, even
+    on a 429 — confirmed by inspecting a live error response's headers).
+
+    This counts requests this process has made against a known static daily
+    limit, resetting at UTC midnight. It's an approximation, not a real quota
+    read: it undercounts after a process restart and can drift from the
+    provider's actual reset boundary (which Google doesn't publish).
+    """
+
+    def __init__(self, limit_requests: int) -> None:
+        self._limit = limit_requests
+        self._count = 0
+        self._day = datetime.now(UTC).date()
+
+    def record(self) -> RateLimitSnapshot:
+        today = datetime.now(UTC).date()
+        if today != self._day:
+            self._day = today
+            self._count = 0
+        self._count += 1
+
+        return RateLimitSnapshot(
+            limit_requests=self._limit,
+            remaining_requests=max(self._limit - self._count, 0),
+            reset_requests=None,
+            limit_tokens=None,
+            remaining_tokens=None,
+            reset_tokens=None,
+        )
