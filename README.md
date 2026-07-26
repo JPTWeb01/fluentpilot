@@ -12,9 +12,10 @@ JWT authentication.
 Phase 2 (AI Foundation) complete: provider-agnostic AI orchestrator (`services/ai`) with
 Groq → Gemini → Ollama fallback chains, wired into the API.
 
-Phase 3 (Voice System) in progress: turn-based push-to-talk voice conversation — record in the
+Phase 3 (Voice System) v1 complete: turn-based push-to-talk voice conversation — record in the
 browser, transcribe (Groq → Gemini fallback), reply via the text orchestrator, synthesize speech
-(Groq → Gemini fallback), play it back. Stateless v1, no real-time streaming yet — see
+(Groq → Gemini fallback), play it back, with an in-app panel showing remaining Groq API quota.
+Stateless v1, no real-time streaming yet — see
 [`docs/adr-0001-voice-v1-scope.md`](docs/adr-0001-voice-v1-scope.md).
 
 ## Stack
