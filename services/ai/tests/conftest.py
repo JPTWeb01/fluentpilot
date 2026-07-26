@@ -2,7 +2,7 @@ import pytest
 
 from fluentpilot_ai.exceptions import ProviderAPIError
 from fluentpilot_ai.provider_interface import AIProvider
-from fluentpilot_ai.speech.provider_interface import SpeechProvider
+from fluentpilot_ai.speech.provider_interface import SpeechProvider, TextToSpeechProvider
 from fluentpilot_ai.speech.types import SpeechAudio
 from fluentpilot_ai.types import AIRequest, AIResponse, TokenUsage
 
@@ -58,6 +58,25 @@ class FakeSpeechProvider(SpeechProvider):
         if self._fails:
             raise ProviderAPIError(f"{self.name} is down")
         return self._transcript
+
+    async def synthesize(self, text: str) -> SpeechAudio:
+        self.synthesize_calls.append(text)
+        if self._fails:
+            raise ProviderAPIError(f"{self.name} is down")
+        return SpeechAudio(audio_bytes=self._audio_bytes, mime_type="audio/wav")
+
+
+class FakeTTSOnlySpeechProvider(TextToSpeechProvider):
+    """Test double for a TTS-only provider (e.g. Piper) — deliberately does not
+    inherit SpeechToTextProvider, so it has no `stt_rate_limit` attribute."""
+
+    def __init__(
+        self, name: str, *, fails: bool = False, audio_bytes: bytes = b"fake-wav-bytes"
+    ) -> None:
+        self.name = name
+        self._fails = fails
+        self._audio_bytes = audio_bytes
+        self.synthesize_calls: list[str] = []
 
     async def synthesize(self, text: str) -> SpeechAudio:
         self.synthesize_calls.append(text)

@@ -1,11 +1,18 @@
 from functools import lru_cache
 
-from fluentpilot_ai import AIOrchestrator, AIProvider, SpeechOrchestrator, SpeechProvider
+from fluentpilot_ai import (
+    AIOrchestrator,
+    AIProvider,
+    SpeechOrchestrator,
+    SpeechToTextProvider,
+    TextToSpeechProvider,
+)
 from fluentpilot_ai.providers.gemini_provider import GeminiProvider
 from fluentpilot_ai.providers.groq_provider import GroqProvider
 from fluentpilot_ai.providers.ollama_provider import OllamaProvider
 from fluentpilot_ai.speech.providers.gemini_speech_provider import GeminiSpeechProvider
 from fluentpilot_ai.speech.providers.groq_speech_provider import GroqSpeechProvider
+from fluentpilot_ai.speech.providers.piper_speech_provider import PiperSpeechProvider
 
 from src.core.config import get_settings
 
@@ -37,9 +44,9 @@ def get_ai_orchestrator() -> AIOrchestrator:
     return AIOrchestrator(_build_providers())
 
 
-def _build_speech_providers() -> dict[str, SpeechProvider]:
+def _build_speech_providers() -> dict[str, SpeechToTextProvider | TextToSpeechProvider]:
     settings = get_settings()
-    providers: dict[str, SpeechProvider] = {}
+    providers: dict[str, SpeechToTextProvider | TextToSpeechProvider] = {}
 
     if settings.groq_api_key:
         providers["groq"] = GroqSpeechProvider(
@@ -52,6 +59,11 @@ def _build_speech_providers() -> dict[str, SpeechProvider]:
         providers["gemini"] = GeminiSpeechProvider(
             api_key=settings.gemini_api_key, tts_model=settings.gemini_tts_model
         )
+
+    # No API key — fully local/offline TTS-only fallback, always registered.
+    # If the voice model hasn't been downloaded, synthesis just fails like any
+    # other provider failure and the orchestrator falls through past it.
+    providers["piper"] = PiperSpeechProvider(voice=settings.piper_voice)
 
     # No Ollama entry — it has no STT/TTS capability.
     return providers

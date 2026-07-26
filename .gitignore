@@ -13,6 +13,9 @@ venv/
 .ruff_cache/
 *.db
 
+# --- Piper voice models (downloaded locally, not committed) ---
+services/ai/models/
+
 # --- Node ---
 node_modules/
 dist/

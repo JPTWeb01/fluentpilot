@@ -23,12 +23,30 @@ configured), `AllProvidersFailedError` is raised with the per-provider errors at
 Providers are only added to the orchestrator if configured (e.g. an API key is set) —
 see `apps/api/src/core/ai.py` for how `apps/api` composes this from `Settings`.
 
-`SpeechOrchestrator` (`speech/router.py`) follows the same shape for speech: `transcribe()`
-and `synthesize()` each try Groq (Whisper STT / PlayAI TTS) then fall back to Gemini
-(multimodal transcription / native TTS), never Ollama (no local STT/TTS). `synthesize()`
-always returns `SpeechAudio` with `mime_type="audio/wav"` regardless of provider — Gemini's
-native audio output is raw PCM, so `GeminiSpeechProvider` wraps it in a WAV header before
-returning, keeping the output format uniform for callers.
+`SpeechOrchestrator` (`speech/router.py`) follows the same shape for speech:
+`transcribe()` tries Groq (Whisper STT) then falls back to Gemini (multimodal
+transcription) — never Ollama or Piper (neither has STT). `synthesize()` tries Groq
+(Orpheus TTS) → Gemini (native TTS) → Piper (local ONNX model, fully offline, no
+API key or quota — see "Piper setup" below). `synthesize()` always returns
+`SpeechAudio` with `mime_type="audio/wav"` regardless of provider — Gemini's native
+audio output is raw PCM and Piper's is raw int16 PCM chunks, so both adapters wrap
+their output in a WAV header before returning, keeping the format uniform for callers.
+
+### Piper setup
+
+Piper is TTS-only and runs fully in-process (no daemon, no network) — but its ONNX
+voice model isn't committed to the repo (~60MB binary) and must be downloaded once:
+
+```
+python -m piper.download_voices en_US-lessac-medium --download-dir services/ai/models/piper
+```
+
+If the model file is missing, `PiperSpeechProvider.synthesize()` raises
+`ProviderAPIError` (with the download command in the message) — same fail-soft
+behavior as any other provider being unconfigured, so the app still runs, it just
+has one fewer TTS fallback. Voice is configurable via `PIPER_VOICE` (see
+`apps/api/src/core/config.py`), and must match a filename already downloaded into
+`services/ai/models/piper/`.
 
 ## Layout
 
@@ -51,7 +69,8 @@ services/ai/
 │   │   ├── router.py             # SpeechOrchestrator + STT/TTS fallback chains
 │   │   └── providers/
 │   │       ├── groq_speech_provider.py
-│   │       └── gemini_speech_provider.py
+│   │       ├── gemini_speech_provider.py
+│   │       └── piper_speech_provider.py
 │   └── prompts/                # packaged system-prompt templates + loader
 │       ├── conversation.txt
 │       ├── grammar.txt

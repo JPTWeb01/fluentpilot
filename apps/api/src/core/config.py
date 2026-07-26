@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     groq_stt_model: str = "whisper-large-v3"
     groq_tts_model: str = "canopylabs/orpheus-v1-english"
 
+    # Piper — local/offline TTS-only fallback, no key needed. Voice model must be
+    # downloaded separately (see services/ai README); if missing, synthesis just
+    # fails like any other provider failure.
+    piper_voice: str = "en_US-lessac-medium"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

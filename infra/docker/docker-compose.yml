@@ -47,6 +47,7 @@ services:
       GEMINI_TTS_MODEL: ${GEMINI_TTS_MODEL}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
       OLLAMA_MODEL: ${OLLAMA_MODEL}
+      PIPER_VOICE: ${PIPER_VOICE}
     ports:
       - "8000:8000"
     depends_on:
