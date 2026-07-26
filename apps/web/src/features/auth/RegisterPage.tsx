@@ -12,11 +12,18 @@ import { useRegister } from "./api";
 export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [mismatchError, setMismatchError] = useState(false);
   const navigate = useNavigate();
   const register = useRegister();
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
+    if (password !== confirmPassword) {
+      setMismatchError(true);
+      return;
+    }
+    setMismatchError(false);
     register.mutate(
       { email, password },
       { onSuccess: () => navigate("/", { replace: true }) },
@@ -54,6 +61,21 @@ export function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="confirm-password">Confirm password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                required
+                minLength={8}
+                maxLength={72}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+            {mismatchError && (
+              <p className="text-sm text-destructive">Passwords don't match.</p>
+            )}
             {register.isError && (
               <p className="text-sm text-destructive">
                 {register.error instanceof ApiError ? register.error.message : "Registration failed."}
