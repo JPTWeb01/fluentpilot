@@ -10,6 +10,8 @@ import { useVoiceTurn, useVoiceUsage } from "@/features/voice/api";
 import type { ProviderUsage, VoiceMessage } from "@/features/voice/types";
 import { useGrammarCheck } from "@/features/grammar/api";
 import type { GrammarCorrection } from "@/features/grammar/types";
+import { useVocabularyCheck } from "@/features/vocabulary/api";
+import type { VocabularySuggestion } from "@/features/vocabulary/types";
 
 type RecorderState = "idle" | "recording" | "processing";
 
@@ -36,12 +38,16 @@ export function PracticePage() {
   const [history, setHistory] = useState<VoiceMessage[]>([]);
   const [replyAudioUrl, setReplyAudioUrl] = useState<string | null>(null);
   const [corrections, setCorrections] = useState<Record<number, GrammarCorrection[]>>({});
+  const [vocabSuggestions, setVocabSuggestions] = useState<Record<number, VocabularySuggestion[]>>(
+    {}
+  );
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const voiceTurn = useVoiceTurn();
   const usage = useVoiceUsage();
   const grammarCheck = useGrammarCheck();
+  const vocabularyCheck = useVocabularyCheck();
 
   const startRecording = async () => {
     if (!window.isSecureContext) {
@@ -116,6 +122,15 @@ export function PracticePage() {
         })
         .catch(() => {});
 
+      vocabularyCheck
+        .mutateAsync({ text: response.transcript })
+        .then((result) => {
+          if (result.suggestions.length) {
+            setVocabSuggestions((prev) => ({ ...prev, [userMessageIndex]: result.suggestions }));
+          }
+        })
+        .catch(() => {});
+
       const replyBlob = base64ToBlob(response.reply_audio_base64, "audio/wav");
       const url = URL.createObjectURL(replyBlob);
       setReplyAudioUrl((previous) => {
@@ -178,6 +193,16 @@ export function PracticePage() {
                       <p key={correctionIndex}>
                         <del>{correction.original}</del> → {correction.corrected} —{" "}
                         {correction.explanation}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {vocabSuggestions[index] && (
+                  <div className="mt-1 space-y-1 text-xs text-sky-600 dark:text-sky-400">
+                    {vocabSuggestions[index].map((suggestion, suggestionIndex) => (
+                      <p key={suggestionIndex}>
+                        "{suggestion.original}" → "{suggestion.suggestion}" —{" "}
+                        {suggestion.explanation}
                       </p>
                     ))}
                   </div>
