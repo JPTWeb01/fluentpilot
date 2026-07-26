@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { RegisterPage } from "@/features/auth/RegisterPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { InterviewPage } from "@/pages/InterviewPage";
 import { PracticePage } from "@/pages/PracticePage";
 
 import { ProtectedRoute } from "./ProtectedRoute";
@@ -21,6 +22,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <PracticePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/interview",
+    element: (
+      <ProtectedRoute>
+        <InterviewPage />
       </ProtectedRoute>
     ),
   },

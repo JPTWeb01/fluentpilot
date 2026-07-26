@@ -2,6 +2,7 @@ import base64
 
 from fluentpilot_ai import AIRequest, AIResponse, RateLimitSnapshot, SpeechAudio, TokenUsage
 from fluentpilot_ai.exceptions import AllProvidersFailedError
+from fluentpilot_ai.prompts import load_prompt
 
 from src.core.ai import get_ai_orchestrator, get_speech_orchestrator
 from src.main import app
@@ -110,6 +111,76 @@ async def test_voice_turn_rejects_invalid_base64(client):
     resp = await client.post(
         "/api/v1/voice/turns",
         json={"audio_base64": "not-valid-base64!!", "mime_type": "audio/webm", "history": []},
+        headers=headers,
+    )
+
+    del app.dependency_overrides[get_ai_orchestrator]
+    del app.dependency_overrides[get_speech_orchestrator]
+
+    assert resp.status_code == 422
+
+
+async def test_voice_turn_defaults_to_conversation_task_when_mode_omitted(client):
+    headers = await _authed_headers(client)
+    fake_ai = FakeAIOrchestrator()
+    app.dependency_overrides[get_ai_orchestrator] = lambda: fake_ai
+    app.dependency_overrides[get_speech_orchestrator] = lambda: FakeSpeechOrchestrator()
+
+    audio_b64 = base64.b64encode(b"raw-audio-bytes").decode("ascii")
+    resp = await client.post(
+        "/api/v1/voice/turns",
+        json={"audio_base64": audio_b64, "mime_type": "audio/webm", "history": []},
+        headers=headers,
+    )
+
+    del app.dependency_overrides[get_ai_orchestrator]
+    del app.dependency_overrides[get_speech_orchestrator]
+
+    assert resp.status_code == 200
+    assert fake_ai.requests[0].task == "conversation"
+    assert fake_ai.requests[0].messages[0].content == load_prompt("conversation")
+
+
+async def test_voice_turn_uses_interview_prompt_and_task_when_mode_is_interview(client):
+    headers = await _authed_headers(client)
+    fake_ai = FakeAIOrchestrator()
+    app.dependency_overrides[get_ai_orchestrator] = lambda: fake_ai
+    app.dependency_overrides[get_speech_orchestrator] = lambda: FakeSpeechOrchestrator()
+
+    audio_b64 = base64.b64encode(b"raw-audio-bytes").decode("ascii")
+    resp = await client.post(
+        "/api/v1/voice/turns",
+        json={
+            "audio_base64": audio_b64,
+            "mime_type": "audio/webm",
+            "history": [],
+            "mode": "interview",
+        },
+        headers=headers,
+    )
+
+    del app.dependency_overrides[get_ai_orchestrator]
+    del app.dependency_overrides[get_speech_orchestrator]
+
+    assert resp.status_code == 200
+    assert fake_ai.requests[0].task == "interview_prep"
+    assert fake_ai.requests[0].messages[0].content == load_prompt("interview")
+
+
+async def test_voice_turn_rejects_invalid_mode(client):
+    headers = await _authed_headers(client)
+    app.dependency_overrides[get_ai_orchestrator] = lambda: FakeAIOrchestrator()
+    app.dependency_overrides[get_speech_orchestrator] = lambda: FakeSpeechOrchestrator()
+
+    audio_b64 = base64.b64encode(b"raw-audio-bytes").decode("ascii")
+    resp = await client.post(
+        "/api/v1/voice/turns",
+        json={
+            "audio_base64": audio_b64,
+            "mime_type": "audio/webm",
+            "history": [],
+            "mode": "not-a-real-mode",
+        },
         headers=headers,
     )
 

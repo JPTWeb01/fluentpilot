@@ -19,7 +19,14 @@ from src.modules.voice.schemas import (
     VoiceTurnResponse,
 )
 
-SYSTEM_PROMPT = load_prompt("conversation")
+SYSTEM_PROMPTS: dict[str, str] = {
+    "conversation": load_prompt("conversation"),
+    "interview": load_prompt("interview"),
+}
+MODE_TASKS: dict[str, str] = {
+    "conversation": "conversation",
+    "interview": "interview_prep",
+}
 
 
 class VoiceService:
@@ -40,13 +47,15 @@ class VoiceService:
         try:
             transcript = await self._speech.transcribe(audio_bytes, payload.mime_type)
 
-            messages = [AIMessage(role="system", content=SYSTEM_PROMPT)]
+            messages = [AIMessage(role="system", content=SYSTEM_PROMPTS[payload.mode])]
             messages.extend(
                 AIMessage(role=turn.role, content=turn.content) for turn in payload.history
             )
             messages.append(AIMessage(role="user", content=transcript))
 
-            reply = await self._ai.complete(AIRequest(messages=messages, task="conversation"))
+            reply = await self._ai.complete(
+                AIRequest(messages=messages, task=MODE_TASKS[payload.mode])
+            )
             reply_audio = await self._speech.synthesize(reply.content)
         except AllProvidersFailedError as exc:
             raise HTTPException(

@@ -20,12 +20,20 @@ export function DashboardPage() {
         </CardHeader>
         <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
           Ready to practice speaking English out loud?
-          <Link
-            to="/practice"
-            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
-          >
-            Start practicing
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              to="/practice"
+              className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
+            >
+              Start practicing
+            </Link>
+            <Link
+              to="/interview"
+              className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              Try a mock interview
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </AppShell>

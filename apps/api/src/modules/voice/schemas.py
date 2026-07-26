@@ -16,6 +16,7 @@ class VoiceTurnRequest(BaseModel):
     audio_base64: str = Field(max_length=MAX_AUDIO_BASE64_LENGTH)
     mime_type: str
     history: list[VoiceMessage] = Field(default_factory=list)
+    mode: Literal["conversation", "interview"] = "conversation"
 
 
 class VoiceTurnResponse(BaseModel):
