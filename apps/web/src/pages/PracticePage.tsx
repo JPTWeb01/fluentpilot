@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
 
@@ -54,12 +54,18 @@ export function PracticePage() {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const historyScrollRef = useRef<HTMLDivElement>(null);
   const voiceTurn = useVoiceTurn();
   const usage = useVoiceUsage();
   const grammarCheck = useGrammarCheck();
   const vocabularyCheck = useVocabularyCheck();
   const pronunciationCheck = usePronunciationCheck();
   const accentCheck = useAccentCheck();
+
+  useEffect(() => {
+    const el = historyScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [history]);
 
   const startRecording = async () => {
     if (!window.isSecureContext) {
@@ -184,8 +190,8 @@ export function PracticePage() {
         <CardHeader>
           <CardTitle>Practice speaking</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center gap-6 py-8">
-          <div className="flex items-center gap-2 self-start text-sm">
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
               id="accent-check-toggle"
@@ -198,80 +204,115 @@ export function PracticePage() {
             </Label>
           </div>
 
-          <Button
-            size="default"
-            className="size-20 rounded-full"
-            disabled={state === "processing"}
-            onClick={state === "recording" ? stopRecording : startRecording}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-amber-600 dark:bg-amber-400" />
+              Grammar
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-sky-600 dark:bg-sky-400" />
+              Vocabulary
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-violet-600 dark:bg-violet-400" />
+              Pronunciation
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+              Accent
+            </span>
+          </div>
+
+          <div
+            ref={historyScrollRef}
+            className="max-h-[50vh] min-h-[160px] overflow-y-auto rounded-md border bg-background/50 p-3"
           >
-            {state === "processing" && <Loader2 className="size-8 animate-spin" />}
-            {state === "recording" && <Square className="size-8" />}
-            {state === "idle" && <Mic className="size-8" />}
-          </Button>
-          <p className="text-sm text-muted-foreground">
-            {state === "idle" && "Tap to start speaking"}
-            {state === "recording" && "Listening... tap to stop"}
-            {state === "processing" && "Thinking..."}
-          </p>
-
-          {replyAudioUrl && (
-            <audio controls src={replyAudioUrl} className="w-full max-w-sm">
-              <track kind="captions" />
-            </audio>
-          )}
-
-          <div className="w-full space-y-3">
-            {history.map((message, index) => (
-              <div key={index} className={message.role === "user" ? "ml-auto max-w-[80%]" : "mr-auto max-w-[80%]"}>
-                <div
-                  className={
-                    message.role === "user"
-                      ? "rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
-                      : "rounded-lg bg-muted px-3 py-2 text-sm"
-                  }
-                >
-                  {message.content}
-                </div>
-                {corrections[index] && (
-                  <div className="mt-1 space-y-1 text-xs text-amber-600 dark:text-amber-400">
-                    {corrections[index].map((correction, correctionIndex) => (
-                      <p key={correctionIndex}>
-                        <del>{correction.original}</del> → {correction.corrected} —{" "}
-                        {correction.explanation}
-                      </p>
-                    ))}
+            {history.length === 0 ? (
+              <p className="flex h-full min-h-[130px] items-center justify-center text-center text-sm text-muted-foreground">
+                Tap the mic below to start practicing.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {history.map((message, index) => (
+                  <div
+                    key={index}
+                    className={message.role === "user" ? "ml-auto max-w-[80%]" : "mr-auto max-w-[80%]"}
+                  >
+                    <div
+                      className={
+                        message.role === "user"
+                          ? "rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground"
+                          : "rounded-lg bg-muted px-3 py-2 text-sm"
+                      }
+                    >
+                      {message.content}
+                    </div>
+                    {corrections[index] && (
+                      <div className="mt-1 space-y-1 text-xs text-amber-600 dark:text-amber-400">
+                        {corrections[index].map((correction, correctionIndex) => (
+                          <p key={correctionIndex}>
+                            <del>{correction.original}</del> → {correction.corrected} —{" "}
+                            {correction.explanation}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {vocabSuggestions[index] && (
+                      <div className="mt-1 space-y-1 text-xs text-sky-600 dark:text-sky-400">
+                        {vocabSuggestions[index].map((suggestion, suggestionIndex) => (
+                          <p key={suggestionIndex}>
+                            "{suggestion.original}" → "{suggestion.suggestion}" —{" "}
+                            {suggestion.explanation}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {pronunciationTips[index] && (
+                      <div className="mt-1 space-y-1 text-xs text-violet-600 dark:text-violet-400">
+                        {pronunciationTips[index].map((tip, tipIndex) => (
+                          <p key={tipIndex}>
+                            "{tip.word}" — {tip.tip}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {accentTips[index] && (
+                      <div className="mt-1 space-y-1 text-xs text-emerald-600 dark:text-emerald-400">
+                        {accentTips[index].map((tip, tipIndex) => (
+                          <p key={tipIndex}>
+                            "{tip.phrase}" — {tip.tip}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-                {vocabSuggestions[index] && (
-                  <div className="mt-1 space-y-1 text-xs text-sky-600 dark:text-sky-400">
-                    {vocabSuggestions[index].map((suggestion, suggestionIndex) => (
-                      <p key={suggestionIndex}>
-                        "{suggestion.original}" → "{suggestion.suggestion}" —{" "}
-                        {suggestion.explanation}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {pronunciationTips[index] && (
-                  <div className="mt-1 space-y-1 text-xs text-violet-600 dark:text-violet-400">
-                    {pronunciationTips[index].map((tip, tipIndex) => (
-                      <p key={tipIndex}>
-                        "{tip.word}" — {tip.tip}
-                      </p>
-                    ))}
-                  </div>
-                )}
-                {accentTips[index] && (
-                  <div className="mt-1 space-y-1 text-xs text-emerald-600 dark:text-emerald-400">
-                    {accentTips[index].map((tip, tipIndex) => (
-                      <p key={tipIndex}>
-                        "{tip.phrase}" — {tip.tip}
-                      </p>
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
-            ))}
+            )}
+          </div>
+
+          <div className="flex flex-col items-center gap-3">
+            <Button
+              size="default"
+              className="size-20 rounded-full"
+              disabled={state === "processing"}
+              onClick={state === "recording" ? stopRecording : startRecording}
+            >
+              {state === "processing" && <Loader2 className="size-8 animate-spin" />}
+              {state === "recording" && <Square className="size-8" />}
+              {state === "idle" && <Mic className="size-8" />}
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              {state === "idle" && "Tap to start speaking"}
+              {state === "recording" && "Listening... tap to stop"}
+              {state === "processing" && "Thinking..."}
+            </p>
+
+            {replyAudioUrl && (
+              <audio controls src={replyAudioUrl} className="w-full max-w-sm">
+                <track kind="captions" />
+              </audio>
+            )}
           </div>
 
           {usage.data && Object.keys(usage.data.providers).length > 0 && (
