@@ -20,6 +20,7 @@ TASK_CHAINS: dict[str, list[str]] = {
     "grammar": SIMPLE_TASK_CHAIN,
     "vocabulary": SIMPLE_TASK_CHAIN,
     "pronunciation": SIMPLE_TASK_CHAIN,
+    "accent": SIMPLE_TASK_CHAIN,
     "interview_prep": COMPLEX_TASK_CHAIN,
     "lesson_generation": COMPLEX_TASK_CHAIN,
     "progress_analysis": COMPLEX_TASK_CHAIN,

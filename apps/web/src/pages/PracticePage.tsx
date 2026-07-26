@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { blobToBase64, base64ToBlob } from "@/features/voice/audio";
 import { useVoiceTurn, useVoiceUsage } from "@/features/voice/api";
 import type { ProviderUsage, VoiceMessage } from "@/features/voice/types";
@@ -14,6 +15,8 @@ import { useVocabularyCheck } from "@/features/vocabulary/api";
 import type { VocabularySuggestion } from "@/features/vocabulary/types";
 import { usePronunciationCheck } from "@/features/pronunciation/api";
 import type { PronunciationTip } from "@/features/pronunciation/types";
+import { useAccentCheck } from "@/features/accent/api";
+import type { AccentTip } from "@/features/accent/types";
 
 type RecorderState = "idle" | "recording" | "processing";
 
@@ -46,6 +49,8 @@ export function PracticePage() {
   const [pronunciationTips, setPronunciationTips] = useState<Record<number, PronunciationTip[]>>(
     {}
   );
+  const [accentCheckEnabled, setAccentCheckEnabled] = useState(false);
+  const [accentTips, setAccentTips] = useState<Record<number, AccentTip[]>>({});
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -54,6 +59,7 @@ export function PracticePage() {
   const grammarCheck = useGrammarCheck();
   const vocabularyCheck = useVocabularyCheck();
   const pronunciationCheck = usePronunciationCheck();
+  const accentCheck = useAccentCheck();
 
   const startRecording = async () => {
     if (!window.isSecureContext) {
@@ -146,6 +152,17 @@ export function PracticePage() {
         })
         .catch(() => {});
 
+      if (accentCheckEnabled) {
+        accentCheck
+          .mutateAsync({ text: response.transcript })
+          .then((result) => {
+            if (result.tips.length) {
+              setAccentTips((prev) => ({ ...prev, [userMessageIndex]: result.tips }));
+            }
+          })
+          .catch(() => {});
+      }
+
       const replyBlob = base64ToBlob(response.reply_audio_base64, "audio/wav");
       const url = URL.createObjectURL(replyBlob);
       setReplyAudioUrl((previous) => {
@@ -168,6 +185,19 @@ export function PracticePage() {
           <CardTitle>Practice speaking</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-6 py-8">
+          <div className="flex items-center gap-2 self-start text-sm">
+            <input
+              type="checkbox"
+              id="accent-check-toggle"
+              checked={accentCheckEnabled}
+              onChange={(event) => setAccentCheckEnabled(event.target.checked)}
+              className="size-4 rounded border-input"
+            />
+            <Label htmlFor="accent-check-toggle" className="font-normal text-muted-foreground">
+              Also check my accent clarity (opt-in)
+            </Label>
+          </div>
+
           <Button
             size="default"
             className="size-20 rounded-full"
@@ -227,6 +257,15 @@ export function PracticePage() {
                     {pronunciationTips[index].map((tip, tipIndex) => (
                       <p key={tipIndex}>
                         "{tip.word}" — {tip.tip}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {accentTips[index] && (
+                  <div className="mt-1 space-y-1 text-xs text-emerald-600 dark:text-emerald-400">
+                    {accentTips[index].map((tip, tipIndex) => (
+                      <p key={tipIndex}>
+                        "{tip.phrase}" — {tip.tip}
                       </p>
                     ))}
                   </div>
