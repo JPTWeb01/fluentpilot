@@ -1,0 +1,12 @@
+{
+  "name": "fluentpilot",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/mobile",
+    "packages/shared"
+  ],
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
