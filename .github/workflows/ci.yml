@@ -91,7 +91,7 @@ jobs:
         run: npm run test --workspace=packages/shared
 
   mobile:
-    name: apps/mobile — typecheck & lint
+    name: apps/mobile — typecheck, lint & test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -110,3 +110,6 @@ jobs:
 
       - name: Typecheck
         run: npx tsc --noEmit -p apps/mobile
+
+      - name: Test (jest)
+        run: npm run test --workspace=apps/mobile
