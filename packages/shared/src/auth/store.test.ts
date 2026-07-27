@@ -1,8 +1,20 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import type { StateStorage } from "zustand/middleware";
 
-import { useAuthStore } from "./auth-store";
+import { createAuthStore } from "./store";
 
-describe("useAuthStore", () => {
+function createMemoryStorage(): StateStorage {
+  const store = new Map<string, string>();
+  return {
+    getItem: (name) => store.get(name) ?? null,
+    setItem: (name, value) => store.set(name, value),
+    removeItem: (name) => store.delete(name),
+  };
+}
+
+describe("createAuthStore", () => {
+  const useAuthStore = createAuthStore(createMemoryStorage());
+
   beforeEach(() => {
     useAuthStore.setState({ accessToken: null, refreshToken: null });
   });

@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest } from "../../api/client";
 
 import type { UsageResponse, VoiceTurnRequest, VoiceTurnResponse } from "./types";
 

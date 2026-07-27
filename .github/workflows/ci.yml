@@ -85,3 +85,7 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Test packages/shared (vitest)
+        working-directory: .
+        run: npm run test --workspace=packages/shared

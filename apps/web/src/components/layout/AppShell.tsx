@@ -1,3 +1,4 @@
+import { useMe } from "@fluentpilot/shared";
 import { type PropsWithChildren, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +20,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useMe } from "@/features/auth/api";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function AppShell({ children }: PropsWithChildren) {

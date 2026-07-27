@@ -1,6 +1,23 @@
-import { useAuthStore } from "@/stores/auth-store";
+export interface ApiClientConfig {
+  baseUrl: string;
+  getAccessToken: () => string | null;
+  getRefreshToken: () => string | null;
+  onSession: (accessToken: string, refreshToken: string) => void;
+  onSessionCleared: () => void;
+}
 
-const API_URL = import.meta.env.VITE_API_URL;
+let config: ApiClientConfig | null = null;
+
+export function configureApiClient(cfg: ApiClientConfig): void {
+  config = cfg;
+}
+
+export function getApiClientConfig(): ApiClientConfig {
+  if (!config) {
+    throw new Error("apiRequest() called before configureApiClient() was run");
+  }
+  return config;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -22,22 +39,23 @@ async function parseErrorMessage(response: Response): Promise<string> {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const { refreshToken, clearSession } = useAuthStore.getState();
+  const { baseUrl, getRefreshToken, onSession, onSessionCleared } = getApiClientConfig();
+  const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
 
-  const response = await fetch(`${API_URL}/auth/refresh`, {
+  const response = await fetch(`${baseUrl}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
 
   if (!response.ok) {
-    clearSession();
+    onSessionCleared();
     return null;
   }
 
   const data: { access_token: string; refresh_token: string } = await response.json();
-  useAuthStore.setState({ accessToken: data.access_token, refreshToken: data.refresh_token });
+  onSession(data.access_token, data.refresh_token);
   return data.access_token;
 }
 
@@ -49,19 +67,20 @@ interface RequestOptions {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = true } = options;
+  const { baseUrl, getAccessToken } = getApiClientConfig();
 
   const doFetch = async (token: string | null): Promise<Response> => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (auth && token) headers.Authorization = `Bearer ${token}`;
 
-    return fetch(`${API_URL}${path}`, {
+    return fetch(`${baseUrl}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
   };
 
-  let token = useAuthStore.getState().accessToken;
+  let token = getAccessToken();
   let response = await doFetch(token);
 
   if (auth && response.status === 401) {

@@ -1,3 +1,4 @@
+import { ApiError, useRegister } from "@fluentpilot/shared";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -5,9 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError } from "@/lib/api-client";
-
-import { useRegister } from "./api";
 
 export function RegisterPage() {
   const [email, setEmail] = useState("");

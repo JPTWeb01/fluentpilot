@@ -1,8 +1,8 @@
+import { useMe } from "@fluentpilot/shared";
 import { Link } from "react-router";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMe } from "@/features/auth/api";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function DashboardPage() {

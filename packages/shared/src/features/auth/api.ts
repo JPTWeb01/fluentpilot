@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiRequest } from "@/lib/api-client";
-import { useAuthStore } from "@/stores/auth-store";
+import { apiRequest, getApiClientConfig } from "../../api/client";
 
 import type { LoginRequest, RegisterRequest, TokenResponse, UserResponse } from "./types";
 
@@ -14,11 +13,10 @@ export function useMe(enabled: boolean) {
 }
 
 function useStartSession() {
-  const setSession = useAuthStore((s) => s.setSession);
   const queryClient = useQueryClient();
 
   return async (tokens: TokenResponse) => {
-    setSession(tokens.access_token, tokens.refresh_token);
+    getApiClientConfig().onSession(tokens.access_token, tokens.refresh_token);
     await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
   };
 }
@@ -44,11 +42,10 @@ export function useRegister() {
 }
 
 export function useLogout() {
-  const clearSession = useAuthStore((s) => s.clearSession);
   const queryClient = useQueryClient();
 
   return () => {
-    clearSession();
+    getApiClientConfig().onSessionCleared();
     queryClient.clear();
   };
 }

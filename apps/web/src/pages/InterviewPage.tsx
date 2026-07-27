@@ -1,3 +1,5 @@
+import type { ProviderUsage, VoiceMessage } from "@fluentpilot/shared";
+import { useVoiceTurn, useVoiceUsage } from "@fluentpilot/shared";
 import { useRef, useState } from "react";
 import { Loader2, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
@@ -6,8 +8,6 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { blobToBase64, base64ToBlob } from "@/features/voice/audio";
-import { useVoiceTurn, useVoiceUsage } from "@/features/voice/api";
-import type { ProviderUsage, VoiceMessage } from "@/features/voice/types";
 
 type RecorderState = "idle" | "recording" | "processing";
 

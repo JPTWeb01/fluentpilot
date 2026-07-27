@@ -1,3 +1,12 @@
+import type { AccentTip, GrammarCorrection, ProviderUsage, PronunciationTip, VocabularySuggestion, VoiceMessage } from "@fluentpilot/shared";
+import {
+  useAccentCheck,
+  useGrammarCheck,
+  usePronunciationCheck,
+  useVocabularyCheck,
+  useVoiceTurn,
+  useVoiceUsage,
+} from "@fluentpilot/shared";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
@@ -7,16 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { blobToBase64, base64ToBlob } from "@/features/voice/audio";
-import { useVoiceTurn, useVoiceUsage } from "@/features/voice/api";
-import type { ProviderUsage, VoiceMessage } from "@/features/voice/types";
-import { useGrammarCheck } from "@/features/grammar/api";
-import type { GrammarCorrection } from "@/features/grammar/types";
-import { useVocabularyCheck } from "@/features/vocabulary/api";
-import type { VocabularySuggestion } from "@/features/vocabulary/types";
-import { usePronunciationCheck } from "@/features/pronunciation/api";
-import type { PronunciationTip } from "@/features/pronunciation/types";
-import { useAccentCheck } from "@/features/accent/api";
-import type { AccentTip } from "@/features/accent/types";
 
 type RecorderState = "idle" | "recording" | "processing";
 

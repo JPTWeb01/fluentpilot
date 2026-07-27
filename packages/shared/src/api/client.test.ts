@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useAuthStore } from "@/stores/auth-store";
-
-import { apiRequest, ApiError } from "./api-client";
+import { apiRequest, ApiError, configureApiClient } from "./client";
 
 interface MockResponseInit {
   ok?: boolean;
@@ -17,15 +15,32 @@ function mockResponse({ ok = true, status = 200, statusText = "OK", body = {} }:
 
 describe("apiRequest", () => {
   const fetchMock = vi.fn();
+  let accessToken: string | null = null;
+  let refreshToken: string | null = null;
 
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    useAuthStore.setState({ accessToken: null, refreshToken: null });
+    accessToken = null;
+    refreshToken = null;
+    configureApiClient({
+      baseUrl: "",
+      getAccessToken: () => accessToken,
+      getRefreshToken: () => refreshToken,
+      onSession: (newAccessToken, newRefreshToken) => {
+        accessToken = newAccessToken;
+        refreshToken = newRefreshToken;
+      },
+      onSessionCleared: () => {
+        accessToken = null;
+        refreshToken = null;
+      },
+    });
   });
 
   it("attaches the Authorization header when a token is present", async () => {
-    useAuthStore.getState().setSession("token-1", "refresh-1");
+    accessToken = "token-1";
+    refreshToken = "refresh-1";
     fetchMock.mockResolvedValueOnce(mockResponse({ body: { foo: "bar" } }));
 
     const result = await apiRequest<{ foo: string }>("/thing");
@@ -36,7 +51,8 @@ describe("apiRequest", () => {
   });
 
   it("refreshes an expired token and retries the request once", async () => {
-    useAuthStore.getState().setSession("expired-token", "refresh-1");
+    accessToken = "expired-token";
+    refreshToken = "refresh-1";
     fetchMock
       .mockResolvedValueOnce(mockResponse({ ok: false, status: 401, statusText: "Unauthorized" }))
       .mockResolvedValueOnce(
@@ -55,13 +71,13 @@ describe("apiRequest", () => {
     const [, retryInit] = fetchMock.mock.calls[2];
     expect((retryInit.headers as Record<string, string>).Authorization).toBe("Bearer new-token");
 
-    const state = useAuthStore.getState();
-    expect(state.accessToken).toBe("new-token");
-    expect(state.refreshToken).toBe("new-refresh");
+    expect(accessToken).toBe("new-token");
+    expect(refreshToken).toBe("new-refresh");
   });
 
   it("clears the session and throws when the refresh itself fails", async () => {
-    useAuthStore.getState().setSession("expired-token", "refresh-1");
+    accessToken = "expired-token";
+    refreshToken = "refresh-1";
     fetchMock
       .mockResolvedValueOnce(
         mockResponse({ ok: false, status: 401, statusText: "Unauthorized", body: { detail: "Unauthorized" } }),
@@ -70,9 +86,8 @@ describe("apiRequest", () => {
 
     await expect(apiRequest("/thing")).rejects.toMatchObject({ status: 401, message: "Unauthorized" });
 
-    const state = useAuthStore.getState();
-    expect(state.accessToken).toBeNull();
-    expect(state.refreshToken).toBeNull();
+    expect(accessToken).toBeNull();
+    expect(refreshToken).toBeNull();
   });
 
   it("throws an ApiError with the parsed detail message on failure", async () => {
@@ -86,7 +101,8 @@ describe("apiRequest", () => {
   });
 
   it("returns undefined for a 204 response without parsing a body", async () => {
-    useAuthStore.getState().setSession("token-1", "refresh-1");
+    accessToken = "token-1";
+    refreshToken = "refresh-1";
     const json = vi.fn();
     fetchMock.mockResolvedValueOnce({ ok: true, status: 204, statusText: "No Content", json });
 
